@@ -27,6 +27,9 @@ set shiftwidth=2
 " Enable incremental search.
 set incsearch
 
+" Set highlight.
+set hlsearch
+
 " Complementation of command mode.
 set wildmenu
 
