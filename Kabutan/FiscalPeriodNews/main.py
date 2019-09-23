@@ -1,3 +1,6 @@
+import config
+from twitter import Twitter, OAuth
+
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import os
@@ -11,6 +14,15 @@ topURL = "https://kabutan.jp"
 pageURL = topURL + "/news/?&page="
 
 def main():
+    tw = Twitter(
+        auth = OAuth(
+            config.TW_TOKEN,
+            config.TW_TOKEN_SECRET,
+            config.TW_CONSUMER_KEY,
+            config.TW_CONSUMER_SECRET,
+        )
+    )
+    
     latestNews = ""
     if os.path.exists(latestNewsFile):
       with open(latestNewsFile, "r", encoding="utf-8") as infile:
@@ -39,7 +51,8 @@ def main():
               continue
 
           if output == True:
-            print(cols[2].text + ", " + newsURL)
+            msg = cols[2].text + "\n" + newsURL
+            tw.statuses.update(status=msg)
     
     with open(latestNewsFile, "w", encoding="utf-8") as outfile:
       outfile.write(cols[2].text)
