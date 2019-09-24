@@ -51,8 +51,8 @@ def main():
               continue
 
           if output == True:
-            msg = cols[2].text + "\n" + newsURL
-            tw.statuses.update(status=msg)
+              msg = cols[2].text + "\n" + newsURL
+              tw.statuses.update(status=msg)
     
     with open(latestNewsFile, "w", encoding="utf-8") as outfile:
       outfile.write(cols[2].text)
