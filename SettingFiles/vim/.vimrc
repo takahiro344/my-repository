@@ -62,7 +62,6 @@ inoremap { {}<LEFT>
 inoremap {<ENTER> {}<LEFT><CR><CR><BS><BS><ESC><UP><S-a>
 inoremap ( ()<LEFT>
 inoremap (<ENTER> ()<LEFT><CR><CR><BS><BS><ESC><UP><S-a>
-inoremap < <><LEFT>
 inoremap [ []<LEFT>
 inoremap " ""<LEFT>
 inoremap ' ''<LEFT>
