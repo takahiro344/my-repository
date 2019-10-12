@@ -20,7 +20,8 @@ def getIpoInfoFromCodeNo(codeNo):
     ipokisoURL = getTargetIpoKisoURL(codeNo)
     mainStockHoldersInfo = getMainStockHoldersInfo(ipokisoURL)
 
-    return companyName, detailInfo, mainStockHoldersInfo
+    return companyName, detailInfo, mainStockHoldersInfo,\
+           minkabuURL, ipokisoURL
 
 def getTargetMinkabuURL(codeNo):
     return 'https://minkabu.jp/stock/' + str(codeNo) + '/ipo'
