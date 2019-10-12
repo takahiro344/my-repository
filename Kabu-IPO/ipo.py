@@ -91,10 +91,3 @@ def getMainStockHoldersInfo(url):
         mainStockHoldersInfo.append((name, ratio, lockup))
 
     return mainStockHoldersInfo
-
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('Please input code number.')
-    else:
-        getIpoInfoFromCodeNo(sys.argv[1])
-
