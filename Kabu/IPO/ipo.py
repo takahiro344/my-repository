@@ -42,23 +42,32 @@ def getDetailInfo(dataList):
     return (basicInfo, scheduleInfo, ipoInfo)
 
 def getBasicInfo(rows):
-    return (rows[1].get_text(), # 市場
-            rows[2].get_text(), # 主幹事
-            rows[4].get_text()) # 事業内容
+    try:
+        return (rows[1].get_text(), # 市場
+                rows[2].get_text(), # 主幹事
+                rows[4].get_text()) # 事業内容
+    except:
+        return None
 
 def getScheduleInfo(rows):
-    return (rows[2].get_text(), # BB期間
-            rows[5].get_text()) # 上場日
+    try:
+        return (rows[2].get_text(), # BB期間
+                rows[5].get_text()) # 上場日
+    except:
+        return None
 
 def getIpoInfo(rows):
-    issuedStocks = rows[9].get_text()
-    issuedStocks = re.sub('／ ', '\n', issuedStocks)
-    return (rows[1].get_text(), # 公募価格
-            rows[2].get_text(), # 公開価格PER
-            rows[4].get_text(), # 公開価格PBR
-            rows[7].get_text(), # 公募枚数
-            rows[8].get_text(), # 売出枚数
-            issuedStocks) # 発行済株式数
+    try:
+        issuedStocks = rows[9].get_text()
+        issuedStocks = re.sub('／ ', '\n', issuedStocks)
+        return (rows[1].get_text(), # 公募価格
+                rows[2].get_text(), # 公開価格PER
+                rows[4].get_text(), # 公開価格PBR
+                rows[7].get_text(), # 公募枚数
+                rows[8].get_text(), # 売出枚数
+                issuedStocks) # 発行済株式数
+    except:
+        return None
 
 def getTargetIpoKisoURL(codeNo):
     res = requests.get('https://google.com/search?num=3&q='
@@ -91,3 +100,38 @@ def getMainStockHoldersInfo(url):
         mainStockHoldersInfo.append((name, ratio, lockup))
 
     return mainStockHoldersInfo
+
+def main():
+    if len(sys.argv) < 2:
+        print("Please input a code number.")
+        return
+   
+    name, detail, stockHolder, minkabu, ipokiso =\
+        getIpoInfoFromCodeNo(sys.argv[1])
+    if detail[0] is None or detail[1] is None or detail[2] is None:
+        return
+
+    basicInfo = detail[0]
+    scheduleInfo = detail[1]
+    ipoInfo = detail[2]
+
+    print('【会社名】\n' + name)
+    print('【事業内容】\n' + basicInfo[2])
+    print('【主幹事】\n' + basicInfo[1])
+    print('【市場】\n' + basicInfo[0])
+    print('【BB期間】\n' + scheduleInfo[0])
+    print('【上場日】\n' + scheduleInfo[1])
+    print('【公開価格】\n' + ipoInfo[0])
+    print('【公開価格PER】\n' + ipoInfo[1])
+    print('【公開価格PBR】\n' + ipoInfo[2])
+    print('【発行済株式数】\n' + ipoInfo[5])
+    print('【公募枚数】\n' + ipoInfo[3])
+    print('【売出枚数】\n' + ipoInfo[4])
+
+    print('【株主、比率、ロックアップ】')
+    for s in stockHolder:
+        print(s[0])
+        print(s[1] + '  ' + s[2])
+
+if __name__ == "__main__":
+    main()
