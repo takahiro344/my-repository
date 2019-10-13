@@ -1,10 +1,12 @@
 # coding: utf-8
 # coding=utf-8
 
-from bs4 import BeautifulSoup
+import re
 import ssl
-import re, requests
 import sys
+
+import requests
+from bs4 import BeautifulSoup
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
