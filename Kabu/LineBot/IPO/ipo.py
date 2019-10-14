@@ -20,9 +20,15 @@ def getIpoInfoFromCodeNo(codeNo):
     
     dataList = bsObj.findAll('dl', {'class':'md_data_list'})
     detailInfo = getDetailInfo(dataList)
+    if detailInfo[0] is None or detailInfo[1] is None or detailInfo[2] is None:
+        # 上場済とみなす。
+        return companyName, (None, None, None), None, None, None
 
     ipokisoURL = getTargetIpoKisoURL(codeNo)
     mainStockHoldersInfo = getMainStockHoldersInfo(ipokisoURL)
+    if mainStockHoldersInfo is None:
+        # 上場済とみなす。
+        return companyName, (None, None, None), None, None, None
 
     return companyName, detailInfo, mainStockHoldersInfo,\
            minkabuURL, ipokisoURL
@@ -107,21 +113,24 @@ def getMainStockHoldersInfo(url):
     elms = table.findAll('td')
     numElms = len(elms)
 
-    mainStockHoldersInfo = []
-    for i in range(0, numElms, 3):
-        name = elms[i].get_text()
-        name = re.sub(r' +', ' ', name)
+    try:
+        mainStockHoldersInfo = []
+        for i in range(0, numElms, 3):
+            name = elms[i].get_text()
+            name = re.sub(r' +', ' ', name)
 
-        ratio = elms[i + 1].get_text()
+            ratio = elms[i + 1].get_text()
         
-        lockup = elms[i + 2].get_text()
-        lockup = lockup.replace('\r',
-                                '').replace('\n',
-                                            '').replace('\u3000', '-')
-        lockup = re.sub(r' +', ' ', lockup)
-        mainStockHoldersInfo.append((name, ratio, lockup))
+            lockup = elms[i + 2].get_text()
+            lockup = lockup.replace('\r',
+                                    '').replace('\n',
+                                                '').replace('\u3000', '-')
+            lockup = re.sub(r' +', ' ', lockup)
+            mainStockHoldersInfo.append((name, ratio, lockup))
 
-    return mainStockHoldersInfo
+        return mainStockHoldersInfo
+    except:
+        return None
 
 def main():
     if len(sys.argv) < 2:
