@@ -60,16 +60,30 @@ def getScheduleInfo(rows):
 
 def getIpoInfo(rows):
     try:
+        offerPrice = rows[1].get_text()
         issuedStocks = rows[9].get_text()
+        marketCapitalization = getMarketCapitalization(offerPrice,
+                                                       issuedStocks)
         issuedStocks = re.sub('／ ', '\n', issuedStocks)
-        return (rows[1].get_text(), # 公募価格
-                rows[2].get_text(), # 公開価格PER
-                rows[4].get_text(), # 公開価格PBR
-                rows[7].get_text(), # 公募枚数
-                rows[8].get_text(), # 売出枚数
-                issuedStocks) # 発行済株式数
+        return (offerPrice,           # 公募価格
+                rows[2].get_text(),   # 公開価格PER
+                rows[4].get_text(),   # 公開価格PBR
+                rows[7].get_text(),   # 公募枚数
+                rows[8].get_text(),   # 売出枚数
+                issuedStocks,         # 発行済株式数
+                marketCapitalization) # 時価総額
     except:
         return None
+
+def getMarketCapitalization(offerPrice, issuedStocks):
+    stocksNum = re.sub('.*公開日現在：', '', issuedStocks)
+    stocksNum = stocksNum.replace(',', '')
+    offerPrice = offerPrice.replace(',', '').replace('円', '')
+    try:
+        marketCap = float(offerPrice) * float(stocksNum)
+        return str(marketCap / 100000000.0) + '億円'
+    except :
+        return '---'
 
 def getTargetIpoKisoURL(codeNo):
     res = requests.get('https://google.com/search?num=3&q='
@@ -129,6 +143,7 @@ def main():
     print('【発行済株式数】\n' + ipoInfo[5])
     print('【公募枚数】\n' + ipoInfo[3])
     print('【売出枚数】\n' + ipoInfo[4])
+    print('【時価総額】\n' + ipoInfo[6])
 
     print('【株主、比率、ロックアップ】')
     for s in stockHolder:

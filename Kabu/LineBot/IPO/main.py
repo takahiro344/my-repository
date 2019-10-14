@@ -102,8 +102,9 @@ def showIpoInfo(event, receivedTxt):
                              + '【事業内容】\n' + basicInfo[2] + '\n'\
                              + '【主幹事】\n' + basicInfo[1] + '\n'\
                              + '【市場】\n' + basicInfo[0] + '\n'\
-                             + '【上場日】\n' + scheduleInfo[1]),
-        TextSendMessage(text='【公開価格】\n' + ipoInfo[0] + '\n'\
+                             + '【上場日】\n' + scheduleInfo[1] + '\n'\
+                             + '【公開価格】\n' + ipoInfo[0] + '\n'\
+                             + '【時価総額】\n' + ipoInfo[6] + '\n'\
                              + '【公開価格PER】\n' + ipoInfo[1] + '\n'\
                              + '【公開価格PBR】\n' + ipoInfo[2] + '\n'\
                              + '【発行済株式数】\n' + ipoInfo[5] + '\n'\
