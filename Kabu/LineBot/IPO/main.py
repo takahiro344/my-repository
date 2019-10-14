@@ -85,6 +85,12 @@ def showSchedule(event):
 def showIpoInfo(event, receivedTxt):
     name, details, holders, minkabu, ipokiso =\
         ipo.getIpoInfoFromCodeNo(receivedTxt)
+    if name is None:
+        replyTxt = '銘柄コードが正しいかどうか確認してください。'
+        line_bot_api.reply_message(event.reply_token,
+                                   TextSendMessage(text=replyTxt))
+        return
+
     basicInfo = details[0]
     scheduleInfo = details[1]
     ipoInfo = details[2]
@@ -98,18 +104,18 @@ def showIpoInfo(event, receivedTxt):
     urlCols = getCarouselColumn(name, minkabu, ipokiso)
 
     messages = [
-        TextSendMessage(text='【会社名】\n' + name + '\n'\
-                             + '【事業内容】\n' + basicInfo[2] + '\n'\
-                             + '【主幹事】\n' + basicInfo[1] + '\n'\
-                             + '【市場】\n' + basicInfo[0] + '\n'\
-                             + '【上場日】\n' + scheduleInfo[1] + '\n'\
-                             + '【公開価格】\n' + ipoInfo[0] + '\n'\
-                             + '【時価総額】\n' + ipoInfo[6] + '\n'\
-                             + '【公開価格PER】\n' + ipoInfo[1] + '\n'\
-                             + '【公開価格PBR】\n' + ipoInfo[2] + '\n'\
+        TextSendMessage(text='【会社名】' + name + '\n'\
+                             + '【事業内容】' + basicInfo[2] + '\n'\
+                             + '【主幹事】' + basicInfo[1] + '\n'\
+                             + '【市場】' + basicInfo[0] + '\n'\
+                             + '【上場日】' + scheduleInfo[1] + '\n'\
+                             + '【公開価格】' + ipoInfo[0] + '\n'\
+                             + '【時価総額】' + ipoInfo[6] + '\n'\
+                             + '【公開価格PER】' + ipoInfo[1] + '\n'\
+                             + '【公開価格PBR】' + ipoInfo[2] + '\n'\
                              + '【発行済株式数】\n' + ipoInfo[5] + '\n'\
-                             + '【公募枚数】\n' + ipoInfo[3] + '\n'\
-                             + '【売出枚数】\n' + ipoInfo[4]),
+                             + '【公募枚数】' + ipoInfo[3] + '\n'\
+                             + '【売出枚数】' + ipoInfo[4]),
         TextSendMessage(text='【株主、比率、ロックアップ】\n' + holderInfo),
         TemplateSendMessage(
             alt_text = '参考サイト',

@@ -11,10 +11,12 @@ from bs4 import BeautifulSoup
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def getIpoInfoFromCodeNo(codeNo):
-    minkabuURL = getTargetMinkabuURL(codeNo)
+    minkabuURL = 'https://minkabu.jp/stock/' + str(codeNo) + '/ipo'
     
     bsObj = openTargetURL(minkabuURL)
     companyName = getCompanyName(bsObj)
+    if companyName is None:
+        return None, (None, None, None), None, None, None
     
     dataList = bsObj.findAll('dl', {'class':'md_data_list'})
     detailInfo = getDetailInfo(dataList)
@@ -25,9 +27,6 @@ def getIpoInfoFromCodeNo(codeNo):
     return companyName, detailInfo, mainStockHoldersInfo,\
            minkabuURL, ipokisoURL
 
-def getTargetMinkabuURL(codeNo):
-    return 'https://minkabu.jp/stock/' + str(codeNo) + '/ipo'
-
 def openTargetURL(targetURL):
     html = requests.get(targetURL)
     html.encoding = html.apparent_encoding
@@ -35,13 +34,20 @@ def openTargetURL(targetURL):
 
 def getCompanyName(bsObj):
     name = bsObj.find('title').get_text()
-    return re.sub(' (.*) .*', '', name)
+    # title == '社名 (銘柄コード)' であることが前提
+    if re.search('([0-9][0-9][0-9][0-9])', name):
+        return re.sub(' (.*) .*', '', name)
+    else:
+        return None
 
 def getDetailInfo(dataList):
-    basicInfo = getBasicInfo(dataList[0].findAll('dd'))
-    scheduleInfo = getScheduleInfo(dataList[1].findAll('dd'))
-    ipoInfo = getIpoInfo(dataList[2].findAll('dd'))
-    return (basicInfo, scheduleInfo, ipoInfo)
+    try:
+        basicInfo = getBasicInfo(dataList[0].findAll('dd'))
+        scheduleInfo = getScheduleInfo(dataList[1].findAll('dd'))
+        ipoInfo = getIpoInfo(dataList[2].findAll('dd'))
+        return (basicInfo, scheduleInfo, ipoInfo)
+    except:
+        return (None, None, None)
 
 def getBasicInfo(rows):
     try:
@@ -131,24 +137,24 @@ def main():
     scheduleInfo = detail[1]
     ipoInfo = detail[2]
 
-    print('【会社名】\n' + name)
-    print('【事業内容】\n' + basicInfo[2])
-    print('【主幹事】\n' + basicInfo[1])
-    print('【市場】\n' + basicInfo[0])
-    print('【BB期間】\n' + scheduleInfo[0])
-    print('【上場日】\n' + scheduleInfo[1])
-    print('【公開価格】\n' + ipoInfo[0])
-    print('【公開価格PER】\n' + ipoInfo[1])
-    print('【公開価格PBR】\n' + ipoInfo[2])
-    print('【発行済株式数】\n' + ipoInfo[5])
-    print('【公募枚数】\n' + ipoInfo[3])
-    print('【売出枚数】\n' + ipoInfo[4])
-    print('【時価総額】\n' + ipoInfo[6])
+    print('【会社名】' + name)
+    print('【事業内容】' + basicInfo[2])
+    print('【主幹事】' + basicInfo[1])
+    print('【市場】' + basicInfo[0])
+    print('【BB期間】' + scheduleInfo[0])
+    print('【上場日】' + scheduleInfo[1])
+    print('【公開価格】' + ipoInfo[0])
+    print('【公開価格PER】' + ipoInfo[1])
+    print('【公開価格PBR】' + ipoInfo[2])
+    print('【発行済株式数】' + ipoInfo[5])
+    print('【公募枚数】' + ipoInfo[3])
+    print('【売出枚数】' + ipoInfo[4])
+    print('【時価総額】' + ipoInfo[6])
 
     print('【株主、比率、ロックアップ】')
     for s in stockHolder:
-        print(s[0])
-        print(s[1] + '  ' + s[2])
+        print('  ' + s[0])
+        print('  ' + s[1] + '  ' + s[2])
 
 if __name__ == "__main__":
     main()
