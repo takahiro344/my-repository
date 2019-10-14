@@ -139,7 +139,7 @@ def getCarouselColumn(name, minkabu, ipokiso):
             actions = [
                 URITemplateAction(
                     uri = minkabu,
-                    label = name,
+                    label = 'みんかぶをみる',
                 )
             ]
         ),
@@ -150,7 +150,7 @@ def getCarouselColumn(name, minkabu, ipokiso):
             actions = [
                   URITemplateAction(
                       uri = ipokiso,
-                      label = name,
+                      label = 'やさしいIPO株のはじめ方をみる',
                   )
             ]
         ),
