@@ -24,7 +24,6 @@ def getListingScheduleInfo():
 
         if date >= today:
             info.append((name, codeNo, date))
-            print(info)
     
     return info
 
