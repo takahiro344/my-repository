@@ -95,7 +95,7 @@ def showIpoInfo(event, receivedTxt):
     scheduleInfo = details[1]
     ipoInfo = details[2]
     if basicInfo is None or scheduleInfo is None or ipoInfo is None:
-        replyTxt = name + '、は上場済です。'
+        replyTxt = name + 'は、上場済または数日以内に上場の予定です。'
         line_bot_api.reply_message(event.reply_token,
                                    TextSendMessage(text=replyTxt))
         return
