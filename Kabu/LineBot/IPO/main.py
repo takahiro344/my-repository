@@ -4,9 +4,9 @@ import re
 from flask import Flask, abort, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import (CarouselColumn, CarouselTemplate,
-                            MessageEvent, TemplateSendMessage, TextMessage,
-                            TextSendMessage, URITemplateAction)
+from linebot.models import (CarouselColumn, CarouselTemplate, MessageEvent,
+                            TemplateSendMessage, TextMessage, TextSendMessage,
+                            URITemplateAction)
 
 import ipo
 import schedule
@@ -46,7 +46,7 @@ def handle_message(event):
 
     if not isCodeNo and not isSchedule:
         replyTxt = ''
-        if not isCode:
+        if not isCodeNo:
             replyTxt = '取得したい銘柄コードを正しく入力してください。'
         else:
             return
@@ -83,47 +83,75 @@ def showSchedule(event):
                                TextSendMessage(text=replyTxt))
 
 def showIpoInfo(event, receivedTxt):
-    name, details, holders, minkabu, ipokiso =\
-        ipo.getIpoInfoFromCodeNo(receivedTxt)
+    ipoInfo = ipo.getIpoInfoFromCodeNo(receivedTxt)
+    name = ipoInfo["CompanyName"]
     if name is None:
         replyTxt = '銘柄コードが正しいかどうか確認してください。'
         line_bot_api.reply_message(event.reply_token,
                                    TextSendMessage(text=replyTxt))
         return
 
-    basicInfo = details[0]
-    scheduleInfo = details[1]
-    ipoInfo = details[2]
-    if basicInfo is None or scheduleInfo is None or ipoInfo is None:
-        replyTxt = name + 'は、上場済または数日以内に上場の予定です。'
-        line_bot_api.reply_message(event.reply_token,
-                                   TextSendMessage(text=replyTxt))
+    bussinessDesc = ipoInfo["BussinessDesc"]
+    mainSecretary = ipoInfo["MainSecretary"]
+    market = ipoInfo["Market"]
+    listingDate = ipoInfo["ListingDate"]
+    offerPrice = ipoInfo["OfferPrice"]
+    per = ipoInfo["Per"]
+    pbr = ipoInfo["Pbr"]
+    publicOfferingNum = ipoInfo["PublicOfferingNum"]
+    issuedNum = ipoInfo["IssuedNum"]
+    issuedStocks = ipoInfo["IssuedStocks"]
+    marketCapitalization = ipoInfo["MarketCapitalization"]
+    stockHolder = ipoInfo["MainStockHolders"]
+
+    minkabu = ipoInfo["minkabu"]
+    ipokiso = ipoInfo["ipokiso"]
+    urlCols = getCarouselColumn(name, minkabu, ipokiso)
+    urlMsg = TemplateSendMessage(
+                 alt_text = '参考サイト',
+                 template = CarouselTemplate(columns=urlCols,
+                                             image_size='cover')
+             )
+
+    if (bussinessDesc is None or
+        mainSecretary is None or
+        market is None or
+        listingDate is None or
+        offerPrice is None or
+        per is None or
+        pbr is None or
+        publicOfferingNum is None or
+        issuedNum is None or
+        issuedStocks is None or
+        marketCapitalization is None or
+        stockHolder is None):
+        messages = [
+            TextSendMessage(text=name + \
+                            'は、上場済または数日以内に上場の予定です。'),
+            urlMsg,
+        ]
+        line_bot_api.reply_message(event.reply_token, messages=messages)
         return
     
-    holderInfo = createStockHolderInfo(holders)
-    urlCols = getCarouselColumn(name, minkabu, ipokiso)
+    holderInfo = createStockHolderInfo(stockHolder)
 
     messages = [
         TextSendMessage(text='【会社名】' + name + '\n'\
-                             + '【事業内容】' + basicInfo[2] + '\n'\
-                             + '【主幹事】' + basicInfo[1] + '\n'\
-                             + '【市場】' + basicInfo[0] + '\n'\
-                             + '【上場日】' + scheduleInfo[1] + '\n'\
-                             + '【公開価格】' + ipoInfo[0] + '\n'\
-                             + '【時価総額】' + ipoInfo[6] + '\n'\
-                             + '【公開価格PER】' + ipoInfo[1] + '\n'\
-                             + '【公開価格PBR】' + ipoInfo[2] + '\n'\
-                             + '【発行済株式数】\n' + ipoInfo[5] + '\n'\
-                             + '【公募枚数】' + ipoInfo[3] + '\n'\
-                             + '【売出枚数】' + ipoInfo[4]),
+                             + '【事業内容】' + bussinessDesc + '\n'\
+                             + '【主幹事】' + mainSecretary + '\n'\
+                             + '【市場】' + market + '\n'\
+                             + '【上場日】' + listingDate + '\n'\
+                             + '【公開価格】' + offerPrice + '\n'\
+                             + '【時価総額】' + marketCapitalization + '\n'\
+                             + '【公開価格PER】' + per + '\n'\
+                             + '【公開価格PBR】' + pbr + '\n'\
+                             + '【発行済株式数】\n' + issuedStocks + '\n'\
+                             + '【公募枚数】' + publicOfferingNum + '\n'\
+                             + '【売出枚数】' + issuedNum),
         TextSendMessage(text='【株主、比率、ロックアップ】\n' + holderInfo),
-        TemplateSendMessage(
-            alt_text = '参考サイト',
-            template = CarouselTemplate(columns=urlCols,
-                                        image_size='cover'),
-        )
+        urlMsg,
     ]
-    
+
     line_bot_api.reply_message(event.reply_token, messages=messages)
 
 def createStockHolderInfo(holders):

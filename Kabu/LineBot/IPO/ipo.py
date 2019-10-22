@@ -4,6 +4,7 @@
 import re
 import ssl
 import sys
+from collections import defaultdict
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,81 +12,74 @@ from bs4 import BeautifulSoup
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def getIpoInfoFromCodeNo(codeNo):
+    ipoInfo = defaultdict(lambda: None)
     minkabuURL = 'https://minkabu.jp/stock/' + str(codeNo) + '/ipo'
     
     bsObj = openTargetURL(minkabuURL)
-    companyName = getCompanyName(bsObj)
-    if companyName is None:
-        return None, (None, None, None), None, None, None
-    
+    setCompanyName(ipoInfo, bsObj)
+
     dataList = bsObj.findAll('dl', {'class':'md_data_list'})
-    detailInfo = getDetailInfo(dataList)
-    if detailInfo[0] is None or detailInfo[1] is None or detailInfo[2] is None:
-        # 上場済とみなす。
-        return companyName, (None, None, None), None, None, None
+    setDetailInfo(ipoInfo, dataList)
 
     ipokisoURL = getTargetIpoKisoURL(codeNo)
-    mainStockHoldersInfo = getMainStockHoldersInfo(ipokisoURL)
-    if mainStockHoldersInfo is None:
-        # 上場済とみなす。
-        return companyName, (None, None, None), None, None, None
+    setMainStockHoldersInfo(ipoInfo, ipokisoURL)
 
-    return companyName, detailInfo, mainStockHoldersInfo,\
-           minkabuURL, ipokisoURL
+    ipoInfo["minkabu"] = minkabuURL
+    ipoInfo["ipokiso"] = ipokisoURL
+
+    return ipoInfo
 
 def openTargetURL(targetURL):
     html = requests.get(targetURL)
     html.encoding = html.apparent_encoding
     return BeautifulSoup(html.content, 'html.parser')
 
-def getCompanyName(bsObj):
+def setCompanyName(ipoInfo, bsObj):
     name = bsObj.find('title').get_text()
     # title == '社名 (銘柄コード)' であることが前提
     if re.search('([0-9][0-9][0-9][0-9])', name):
-        return re.sub(' (.*) .*', '', name)
-    else:
-        return None
+        ipoInfo["CompanyName"] = re.sub(' (.*) .*', '', name)
 
-def getDetailInfo(dataList):
+def setDetailInfo(ipoInfo, dataList):
     try:
-        basicInfo = getBasicInfo(dataList[0].findAll('dd'))
-        scheduleInfo = getScheduleInfo(dataList[1].findAll('dd'))
-        ipoInfo = getIpoInfo(dataList[2].findAll('dd'))
-        return (basicInfo, scheduleInfo, ipoInfo)
+        setBasicInfo(ipoInfo, dataList[0].findAll('dd'))
+        setScheduleInfo(ipoInfo, dataList[1].findAll('dd'))
+        setIpoInfo(ipoInfo, dataList[2].findAll('dd'))
     except:
-        return (None, None, None)
+        pass
 
-def getBasicInfo(rows):
+def setBasicInfo(ipoInfo, rows):
     try:
-        return (rows[1].get_text(), # 市場
-                rows[2].get_text(), # 主幹事
-                rows[4].get_text()) # 事業内容
+        ipoInfo["Market"] = rows[1].get_text()        # 市場
+        ipoInfo["MainSecretary"] = rows[2].get_text() # 主幹事
+        ipoInfo["BussinessDesc"] = rows[4].get_text() # 事業内容
     except:
-        return None
+        pass 
 
-def getScheduleInfo(rows):
+def setScheduleInfo(ipoInfo, rows):
     try:
-        return (rows[2].get_text(), # BB期間
-                rows[5].get_text()) # 上場日
+        ipoInfo["BB"] = rows[2].get_text()          # BB期間
+        ipoInfo["ListingDate"] = rows[5].get_text() # 上場日
     except:
-        return None
+        pass
 
-def getIpoInfo(rows):
+def setIpoInfo(ipoInfo, rows):
     try:
         offerPrice = rows[1].get_text()
         issuedStocks = rows[9].get_text()
         marketCapitalization = getMarketCapitalization(offerPrice,
                                                        issuedStocks)
         issuedStocks = re.sub('／ ', '\n', issuedStocks)
-        return (offerPrice,           # 公募価格
-                rows[2].get_text(),   # 公開価格PER
-                rows[4].get_text(),   # 公開価格PBR
-                rows[7].get_text(),   # 公募枚数
-                rows[8].get_text(),   # 売出枚数
-                issuedStocks,         # 発行済株式数
-                marketCapitalization) # 時価総額
+
+        ipoInfo["OfferPrice"] = offerPrice                     # 公募価格
+        ipoInfo["Per"] = rows[2].get_text()                    # 公開価格PER
+        ipoInfo["Pbr"] = rows[4].get_text()                    # 公開価格PBR
+        ipoInfo["PublicOfferingNum"] = rows[7].get_text()      # 公募枚数
+        ipoInfo["IssuedNum"] = rows[8].get_text()              # 売出枚数
+        ipoInfo["IssuedStocks"] = issuedStocks                 # 発行済株式数
+        ipoInfo["MarketCapitalization"] = marketCapitalization # 時価総額
     except:
-        return None
+        pass
 
 def getMarketCapitalization(offerPrice, issuedStocks):
     stocksNum = re.sub('.*公開日現在：', '', issuedStocks)
@@ -107,7 +101,7 @@ def getTargetIpoKisoURL(codeNo):
     topHref = urlList[0].get('href')
     return re.search(r'https://.*\.html', topHref).group()
 
-def getMainStockHoldersInfo(url):
+def setMainStockHoldersInfo(ipoInfo, url):
     bsObj = openTargetURL(url)
     table = bsObj.find('table', {'class':'kobetudate05'})
     elms = table.findAll('td')
@@ -128,37 +122,61 @@ def getMainStockHoldersInfo(url):
             lockup = re.sub(r' +', ' ', lockup)
             mainStockHoldersInfo.append((name, ratio, lockup))
 
-        return mainStockHoldersInfo
+        ipoInfo["MainStockHolders"] = mainStockHoldersInfo
     except:
-        return None
+        pass
 
 def main():
     if len(sys.argv) < 2:
         print("Please input a code number.")
         return
    
-    name, detail, stockHolder, minkabu, ipokiso =\
-        getIpoInfoFromCodeNo(sys.argv[1])
-    if detail[0] is None or detail[1] is None or detail[2] is None:
+    ipoInfo = getIpoInfoFromCodeNo(sys.argv[1])
+
+    name = ipoInfo["CompanyName"]
+    bussinessDesc = ipoInfo["BussinessDesc"]
+    mainSecretary = ipoInfo["MainSecretary"]
+    market = ipoInfo["Market"]
+    bb = ipoInfo["BB"]
+    listingDate = ipoInfo["ListingDate"]
+    offerPrice = ipoInfo["OfferPrice"]
+    per = ipoInfo["Per"]
+    pbr = ipoInfo["Pbr"]
+    publicOfferingNum = ipoInfo["PublicOfferingNum"]
+    issuedNum = ipoInfo["IssuedNum"]
+    issuedStocks = ipoInfo["IssuedStocks"]
+    marketCapitalization = ipoInfo["MarketCapitalization"]
+    stockHolder = ipoInfo["MainStockHolders"]
+
+    if (name is None or
+        bussinessDesc is None or
+        mainSecretary is None or
+        market is None or
+        bb is None or
+        listingDate is None or
+        offerPrice is None or
+        per is None or
+        pbr is None or
+        publicOfferingNum is None or
+        issuedNum is None or
+        issuedStocks is None or
+        marketCapitalization is None or
+        stockHolder is None):
         return
 
-    basicInfo = detail[0]
-    scheduleInfo = detail[1]
-    ipoInfo = detail[2]
-
     print('【会社名】' + name)
-    print('【事業内容】' + basicInfo[2])
-    print('【主幹事】' + basicInfo[1])
-    print('【市場】' + basicInfo[0])
-    print('【BB期間】' + scheduleInfo[0])
-    print('【上場日】' + scheduleInfo[1])
-    print('【公開価格】' + ipoInfo[0])
-    print('【公開価格PER】' + ipoInfo[1])
-    print('【公開価格PBR】' + ipoInfo[2])
-    print('【発行済株式数】' + ipoInfo[5])
-    print('【公募枚数】' + ipoInfo[3])
-    print('【売出枚数】' + ipoInfo[4])
-    print('【時価総額】' + ipoInfo[6])
+    print('【事業内容】' + bussinessDesc)
+    print('【主幹事】' + mainSecretary)
+    print('【市場】' + market)
+    print('【BB期間】' + bb)
+    print('【上場日】' + listingDate)
+    print('【公開価格】' + offerPrice)
+    print('【公開価格PER】' + per)
+    print('【公開価格PBR】' + pbr)
+    print('【発行済株式数】' + issuedStocks)
+    print('【公募枚数】' + publicOfferingNum)
+    print('【売出枚数】' + issuedNum)
+    print('【時価総額】' + marketCapitalization)
 
     print('【株主、比率、ロックアップ】')
     for s in stockHolder:
